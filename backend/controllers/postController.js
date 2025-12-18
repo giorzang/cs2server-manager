@@ -33,3 +33,17 @@ exports.deletePost = async (req, res) => {
         res.status(500).json({ message: "Lỗi server" });
     }
 };
+
+exports.updatePost = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, content } = req.body;
+        if (!title || !content) return res.status(400).json({ message: "Thiếu dữ liệu" });
+
+        await Post.update(id, title, content);
+        res.json({ message: "Cập nhật thành công" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Lỗi server" });
+    }
+};

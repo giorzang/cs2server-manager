@@ -6,6 +6,7 @@ import api from '../../services/api';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { Match, Participant, MapData, MatchContextType } from '../../types/common';
 import clsx from 'clsx';
+import { useMatchSound } from '../../hooks/useMatchSound';
 
 export default function MatchLayout() {
   const { id } = useParams();
@@ -22,7 +23,11 @@ export default function MatchLayout() {
   const [rconCommand, setRconCommand] = useState('');
   const [rconLog, setRconLog] = useState<string[]>([]);
   const [sendingRcon, setSendingRcon] = useState(false);
+  const [isJoining, setIsJoining] = useState(false); // Chặn spam nút Join
   const logEndRef = useRef<HTMLDivElement>(null);
+
+  // Gọi hook âm thanh
+  useMatchSound(socket);
 
   // 1. Kết nối & Lấy dữ liệu
   useEffect(() => {
@@ -35,14 +40,22 @@ export default function MatchLayout() {
         setParticipants(res.data.participants || []);
         setLoading(false);
       })
-      .catch(() => {
-        navigate('/');
+      .catch((err) => {
+        console.error("Error fetching match:", err);
+        if (err.response && err.response.status === 404) {
+            navigate('/');
+        } else {
+            // Nếu lỗi server hoặc mạng, không redirect mà hiện lỗi
+            setLoading(false); 
+        }
       });
 
+    const token = localStorage.getItem('authToken');
     const newSocket = io('/', {
       path: '/socket.io',
       transports: ['websocket'],
       withCredentials: true,
+      auth: { token } // Gửi token để xác thực user
     });
 
     const joinRoom = () => {
@@ -69,6 +82,10 @@ export default function MatchLayout() {
         }) : null);
     });
 
+    newSocket.on('match_details_update', (updatedMatch: Match) => {
+        setMatch(prev => prev ? ({ ...prev, ...updatedMatch }) : updatedMatch);
+    });
+
     setSocket(newSocket);
 
     return () => {
@@ -84,13 +101,18 @@ export default function MatchLayout() {
   const isAdmin = user?.id === match?.user_id;
   const isLocked = match?.status !== 'PENDING';
 
-  const handleJoin = async (team: 'TEAM1' | 'TEAM2' | 'SPECTATOR') => {
+  const handleJoin = async (team: 'TEAM1' | 'TEAM2' | 'SPECTATOR' | 'WAITING') => {
     if (!match || !user) return;
-    if (isLocked) return;
+    if (isLocked || isJoining) return; // Chặn nếu đang join
+    
+    setIsJoining(true);
     try {
       await api.post(`/api/matches/${match.id}/join`, { team });
     } catch (error: any) {
       alert(error.response?.data?.message || "Lỗi join team");
+    } finally {
+      // Delay một chút để tránh spam click liên tục ngay cả khi API trả về nhanh
+      setTimeout(() => setIsJoining(false), 500);
     }
   };
 

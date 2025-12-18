@@ -2,14 +2,23 @@ const pool = require('../config/database');
 
 class Match {
     /**
-     * Tạo một match mới
+     * Tạo một match mới (Full Features)
      */
-    static async create({ display_name, user_id, server_id, team1_name, team2_name, series_type }) {
+    static async create({ display_name, user_id, server_id, team1_name, team2_name, series_type, is_veto_enabled, is_captain_mode, map_result, pre_selected_maps, tournament_id, bracket_round, bracket_match_index }) {
         const sql = `
-            INSERT INTO matches (display_name, user_id, server_id, team1_name, team2_name, series_type)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO matches (
+                display_name, user_id, server_id, team1_name, team2_name, series_type, 
+                is_veto_enabled, is_captain_mode, map_result, pre_selected_maps,
+                tournament_id, bracket_round, bracket_match_index
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        const [result] = await pool.execute(sql, [display_name, user_id, server_id, team1_name, team2_name, series_type]);
+        const [result] = await pool.execute(sql, [
+            display_name, user_id, server_id, team1_name, team2_name, series_type, 
+            is_veto_enabled || 1, is_captain_mode || 0, map_result, 
+            JSON.stringify(pre_selected_maps || []),
+            tournament_id || null, bracket_round || null, bracket_match_index || null
+        ]);
         return result.insertId;
     }
 
@@ -49,10 +58,15 @@ class Match {
         const [rows] = await pool.execute(sql, [id]);
         const match = rows[0];
         if (match) {
+            // Parse JSON fields safely
             if (typeof match.veto_log === 'string') {
                 try { match.veto_log = JSON.parse(match.veto_log); } catch (e) { match.veto_log = []; }
             }
             if (!Array.isArray(match.veto_log)) match.veto_log = [];
+
+            if (typeof match.pre_selected_maps === 'string') {
+                try { match.pre_selected_maps = JSON.parse(match.pre_selected_maps); } catch (e) { match.pre_selected_maps = []; }
+            }
         }
         return match;
     }
@@ -63,7 +77,12 @@ class Match {
     static async findBasicInfo(id) {
         const sql = 'SELECT * FROM matches WHERE id = ?';
         const [rows] = await pool.execute(sql, [id]);
-        return rows[0];
+        
+        const match = rows[0];
+        if (match && typeof match.pre_selected_maps === 'string') {
+             try { match.pre_selected_maps = JSON.parse(match.pre_selected_maps); } catch (e) { match.pre_selected_maps = []; }
+        }
+        return match;
     }
 
     /**
@@ -90,6 +109,45 @@ class Match {
     static async updateMapResult(id, mapResult, status = 'LIVE') {
         const sql = 'UPDATE matches SET map_result = ?, status = ? WHERE id = ?';
         const [result] = await pool.execute(sql, [mapResult, status, id]);
+        return result.affectedRows > 0;
+    }
+
+    /**
+     * Set Captains và chuyển sang trạng thái PICKING
+     */
+    static async updateCaptains(id, captain1Id, captain2Id) {
+        const sql = 'UPDATE matches SET captain1_id = ?, captain2_id = ?, status = "PICKING" WHERE id = ?';
+        const [result] = await pool.execute(sql, [captain1Id, captain2Id, id]);
+        return result.affectedRows > 0;
+    }
+
+    /**
+     * Cập nhật Settings cho Match
+     */
+    static async updateSettings(id, { is_veto_enabled, is_captain_mode, map_result, pre_selected_maps, display_name, team1_name, team2_name, series_type, server_id }) {
+        let sql = 'UPDATE matches SET is_veto_enabled = ?, is_captain_mode = ?';
+        const params = [is_veto_enabled, is_captain_mode];
+
+        if (map_result !== undefined) {
+            sql += ', map_result = ?';
+            params.push(map_result);
+        }
+
+        if (pre_selected_maps !== undefined) {
+            sql += ', pre_selected_maps = ?';
+            params.push(JSON.stringify(pre_selected_maps));
+        }
+        
+        if (display_name) { sql += ', display_name = ?'; params.push(display_name); }
+        if (team1_name) { sql += ', team1_name = ?'; params.push(team1_name); }
+        if (team2_name) { sql += ', team2_name = ?'; params.push(team2_name); }
+        if (series_type) { sql += ', series_type = ?'; params.push(series_type); }
+        if (server_id) { sql += ', server_id = ?'; params.push(server_id); }
+
+        sql += ' WHERE id = ?';
+        params.push(id);
+
+        const [result] = await pool.execute(sql, params);
         return result.affectedRows > 0;
     }
 

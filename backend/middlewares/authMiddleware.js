@@ -13,9 +13,28 @@ const verifyToken = (req, res, next) => {
         if (err) {
             return res.status(403).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
         }
-        
+
         // Token ngon -> Lưu thông tin giải mã vào req.user để controller dùng
-        req.user = decoded; 
+        req.user = decoded;
+        next();
+    });
+};
+
+const verifyTokenOptional = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        req.user = null;
+        return next();
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            req.user = null; // Token lỗi coi như guest
+        } else {
+            req.user = decoded;
+        }
         next();
     });
 };
@@ -30,4 +49,4 @@ const isAdmin = (req, res, next) => {
     }
 };
 
-module.exports = { verifyToken, isAdmin };
+module.exports = { verifyToken, verifyTokenOptional, isAdmin };

@@ -27,25 +27,62 @@ export interface Match {
   team1_name: string;
   team2_name: string;
   series_type: 'BO1' | 'BO3' | 'BO5';
-  status: 'PENDING' | 'VETO' | 'LIVE' | 'FINISHED' | 'CANCELLED';
+  status: 'PENDING' | 'PICKING' | 'VETO' | 'LIVE' | 'FINISHED' | 'CANCELLED';
   server_id: number;
+  server_name?: string;
   ip?: string;
   port?: number;
   user_id?: string;
   admin_name?: string;
+  
+  // Settings & Captain
+  is_veto_enabled?: number; // 0 or 1
+  is_captain_mode?: number; // 0 or 1
+  captain1_id?: string;
+  captain2_id?: string;
+  pre_selected_maps?: string[] | null;
+
+  // Tournament info
+  tournament_id?: number;
+  bracket_round?: number;
+  bracket_match_index?: number;
+
   veto_log: VetoLog[] | null;
   map_result: string | null;
+  
   winner_team?: string;
   team1_series_score?: number;
   team2_series_score?: number;
+  
+  created_at: string;
+}
+
+export interface Tournament {
+  id: number;
+  name: string;
+  status: 'REGISTRATION' | 'ONGOING' | 'FINISHED';
+  format: 'SINGLE_ELIMINATION' | 'DOUBLE_ELIMINATION';
+  max_teams: number;
+  created_at: string;
+  matches?: Match[];
 }
 
 export interface Participant {
   match_id: number;
   user_id: string;
-  team: 'TEAM1' | 'TEAM2' | 'SPECTATOR';
+  team: 'TEAM1' | 'TEAM2' | 'SPECTATOR' | 'WAITING';
   username: string;
   avatar_url: string;
+}
+
+export interface Post {
+  id: number;
+  title: string;
+  content: string;
+  author_id: string;
+  username: string;
+  avatar_url: string;
+  created_at: string;
 }
 
 export interface MatchContextType {
@@ -55,6 +92,6 @@ export interface MatchContextType {
     mapPool: MapData[];
     isAdmin: boolean;
     isLocked: boolean;
-    handleJoin: (team: 'TEAM1' | 'TEAM2' | 'SPECTATOR') => Promise<void>;
+    handleJoin: (team: 'TEAM1' | 'TEAM2' | 'SPECTATOR' | 'WAITING') => Promise<void>;
     handleStartMatch: () => Promise<void>;
 }

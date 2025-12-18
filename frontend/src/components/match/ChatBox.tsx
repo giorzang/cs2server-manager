@@ -22,9 +22,10 @@ interface Props {
     socket: Socket | null;
     mySlot?: Participant;
     matchStatus: string;
+    participants: Participant[];
 }
 
-export default function ChatBox({ matchId, socket, mySlot, matchStatus }: Props) {
+export default function ChatBox({ matchId, socket, mySlot, matchStatus, participants }: Props) {
     const { user } = useAuthStore();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
@@ -64,10 +65,8 @@ export default function ChatBox({ matchId, socket, mySlot, matchStatus }: Props)
     }, [messages, activeTab, isOpen]);
 
     // Logic kiểm tra quyền Chat Team
-    // Chỉ cho phép nếu đã có Team VÀ trận đấu KHÔNG còn PENDING (tức là đã vào VETO/LIVE)
     const canChatTeam = mySlot && ['TEAM1', 'TEAM2', 'SPECTATOR'].includes(mySlot.team) && matchStatus !== 'PENDING';
 
-    // Nếu đang ở tab TEAM mà bị mất quyền -> chuyển về GLOBAL
     useEffect(() => {
         if (!canChatTeam && activeTab === 'TEAM') {
             setActiveTab('GLOBAL');
@@ -84,6 +83,11 @@ export default function ChatBox({ matchId, socket, mySlot, matchStatus }: Props)
             scope: activeTab === 'TEAM' ? 'TEAM' : 'GLOBAL'
         });
         setInput('');
+    };
+
+    const getPlayerTeam = (userId: string) => {
+        const participant = participants.find(p => p.user_id === userId);
+        return participant ? participant.team : null;
     };
 
     const displayedMessages = messages.filter(m => {
@@ -148,12 +152,14 @@ export default function ChatBox({ matchId, socket, mySlot, matchStatus }: Props)
                 <div className="flex-1 overflow-y-auto p-3 space-y-2 text-sm scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
                     {displayedMessages.map((msg, i) => {
                         const isMe = msg.user_id === user?.id;
+                        const currentTeam = getPlayerTeam(msg.user_id) || msg.sender_team;
+
                         return (
                             <div key={i} className={clsx("flex flex-col", isMe ? "items-end" : "items-start")}>
                                 <div className="flex items-center gap-1.5 mb-0.5">
                                     {!isMe && <img src={msg.avatar_url} className="w-4 h-4 rounded-full" alt=""/>}
                                     <span className={clsx("text-[10px] font-bold", 
-                                        msg.sender_team === 'TEAM1' ? "text-orange-400" : (msg.sender_team === 'TEAM2' ? "text-blue-400" : "text-slate-400")
+                                        currentTeam === 'TEAM1' ? "text-orange-400" : (currentTeam === 'TEAM2' ? "text-blue-400" : "text-slate-400")
                                     )}>
                                         {msg.username}
                                     </span>

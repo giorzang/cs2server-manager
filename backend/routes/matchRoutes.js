@@ -1,6 +1,6 @@
 const express = require('express');
 const matchController = require('../controllers/matchController');
-const { verifyToken, isAdmin } = require('../middlewares/authMiddleware');
+const { verifyToken, verifyTokenOptional, isAdmin } = require('../middlewares/authMiddleware');
 const router = express.Router();
 
 // --- CÁC ROUTE CỤ THỂ PHẢI ĐẶT LÊN TRÊN CÙNG ---
@@ -22,8 +22,18 @@ router.post('/create', verifyToken, isAdmin, matchController.createMatch);
 // Lấy thông tin chi tiết một match
 router.get('/:id', matchController.getMatchDetail);
 
+// Lấy lịch sử chat (Guest xem được)
+router.get('/:id/chat', verifyTokenOptional, matchController.getMatchChat);
+
+// Cập nhật cài đặt Match
+router.put('/:id/settings', verifyToken, isAdmin, matchController.updateSettings);
+
 // Lấy thống kê chi tiết trận đấu (Post-Match)
 router.get('/:id/stats', matchController.getMatchStats);
+
+// Captain Pick
+router.post('/:id/captains', verifyToken, isAdmin, matchController.setCaptains);
+router.post('/:id/pick', verifyToken, matchController.pickPlayer);
 
 // Join Slot (Team1/Team2/Spectator)
 router.post('/:id/join', verifyToken, matchController.joinSlot);

@@ -23,6 +23,12 @@ class Post {
         const [result] = await pool.execute(sql, [id]);
         return result.affectedRows > 0;
     }
+
+    static async update(id, title, content) {
+        const sql = `UPDATE posts SET title = ?, content = ? WHERE id = ?`;
+        const [result] = await pool.execute(sql, [title, content, id]);
+        return result.affectedRows > 0;
+    }
 }
 
 module.exports = Post;

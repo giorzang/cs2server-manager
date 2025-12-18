@@ -11,6 +11,10 @@ const passportConfig = require('./config/passport');
 const authRoutes = require('./routes/authRoutes');
 const matchRoutes = require('./routes/matchRoutes');
 const matchzyRoutes = require('./routes/matchzyRoutes'); // Import MatchZy Routes
+const userRoutes = require('./routes/userRoutes');
+const tournamentRoutes = require('./routes/tournamentRoutes');
+const postRoutes = require('./routes/postRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 const path = require('path'); // Import path module
 
@@ -21,9 +25,12 @@ const app = express();
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
+// Phục vụ file tĩnh (Uploads)
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Session (Chỉ dùng tạm để passport thực hiện bắt tay OpenID)
 app.use(session({
-    secret: 'secret_just_for_handshake',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false
 }));
@@ -37,6 +44,10 @@ passportConfig(passport); // Nạp cấu hình từ file config/passport.js
 app.use('/auth', authRoutes); // Tất cả API bắt đầu bằng /auth
 app.use('/api/matches', matchRoutes);
 app.use('/api/matchzy', matchzyRoutes); // Đăng ký MatchZy Routes
+app.use('/api/users', userRoutes);
+app.use('/api/tournaments', tournamentRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // --- SERVE FRONTEND (PRODUCTION) ---
 // Phục vụ file tĩnh từ thư mục build của Frontend
