@@ -10,7 +10,7 @@ const discord = require('../utils/discord');
 // API: Tạo Match mới
 exports.createMatch = async (req, res) => {
     try {
-        const { display_name, team1_name, team2_name, server_id, series_type, is_veto_enabled, is_captain_mode, map_result, pre_selected_maps } = req.body;
+        const { display_name, team1_name, team2_name, server_id, series_type, is_veto_enabled, is_captain_mode, map_result, pre_selected_maps, game_mode } = req.body;
         const user_id = req.user.uid;
 
         if (!display_name || !team1_name || !team2_name || !server_id || !series_type) {
@@ -51,7 +51,8 @@ exports.createMatch = async (req, res) => {
             is_veto_enabled: vetoEnabled,
             is_captain_mode: captainMode,
             map_result: finalMapResult,
-            pre_selected_maps: finalPreSelectedMaps
+            pre_selected_maps: finalPreSelectedMaps,
+            game_mode: game_mode || 'competitive'
         });
 
         // Gửi Discord

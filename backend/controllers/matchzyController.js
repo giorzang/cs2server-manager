@@ -54,7 +54,7 @@ exports.handleMatchzyEvent = async (req, res) => {
             // --- 5. MAP END ---
             case 'map_result':
                 const mapEndNumber = parseInt(event.map_number) + 1;
-                
+
                 // Determine winner name from nested object (event.winner.team is "team1" or "team2")
                 const winnerSide = event.winner ? event.winner.team : null;
                 const winnerName = winnerSide === 'team1' ? event.team1.name : (winnerSide === 'team2' ? event.team2.name : 'Unknown');
@@ -73,10 +73,10 @@ exports.handleMatchzyEvent = async (req, res) => {
                         );
 
                         if (rows.length > 0 && rows[0].last_event_data) {
-                            const prevEvent = (typeof rows[0].last_event_data === 'string') 
-                                            ? JSON.parse(rows[0].last_event_data) 
-                                            : rows[0].last_event_data;
-                            
+                            const prevEvent = (typeof rows[0].last_event_data === 'string')
+                                ? JSON.parse(rows[0].last_event_data)
+                                : rows[0].last_event_data;
+
                             // Inject players if missing in current event but present in previous
                             if ((!t1Players || t1Players.length === 0) && prevEvent.team1?.players?.length > 0) {
                                 if (!eventToSave.team1) eventToSave.team1 = {};
@@ -107,12 +107,12 @@ exports.handleMatchzyEvent = async (req, res) => {
                 const [matchRows] = await pool.execute('SELECT series_type FROM matches WHERE id = ?', [event.matchid]);
                 if (matchRows.length > 0) {
                     const seriesType = matchRows[0].series_type;
-                    
+
                     // 2. Tính lại Series Score hiện tại (Cộng thêm map vừa win)
                     // Lưu ý: event.teamX.series_score thường là score TRƯỚC khi cộng map này (tùy version MatchZy, nhưng an toàn là tự cộng)
                     // Nếu MatchZy đã cộng rồi thì logic này có thể thừa, nhưng để chắc chắn ta dùng logic đếm.
                     // Tuy nhiên, đơn giản nhất: Nếu thắng BO3 cần 2 win. BO5 cần 3 win.
-                    
+
                     let t1Wins = parseInt(event.team1.series_score);
                     let t2Wins = parseInt(event.team2.series_score);
 
@@ -165,7 +165,7 @@ exports.handleMatchzyEvent = async (req, res) => {
                 const sqlUpdateMatch = `UPDATE matches SET status = 'FINISHED', winner_team = ? WHERE id = ?`;
                 await pool.execute(sqlUpdateMatch, [seriesWinner, event.matchid]);
 
-                io.to(`match_${event.matchid}`).emit('match_end', {
+                io.to(`match_${event.matchid}`).emit('series_end', {
                     matchId: event.matchid,
                     winner: seriesWinner
                 });

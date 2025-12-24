@@ -4,19 +4,19 @@ class Match {
     /**
      * Tạo một match mới (Full Features)
      */
-    static async create({ display_name, user_id, server_id, team1_name, team2_name, series_type, is_veto_enabled, is_captain_mode, map_result, pre_selected_maps, tournament_id, bracket_round, bracket_match_index }) {
+    static async create({ display_name, user_id, server_id, team1_name, team2_name, series_type, is_veto_enabled, is_captain_mode, map_result, pre_selected_maps, game_mode, tournament_id, bracket_round, bracket_match_index }) {
         const sql = `
             INSERT INTO matches (
                 display_name, user_id, server_id, team1_name, team2_name, series_type, 
-                is_veto_enabled, is_captain_mode, map_result, pre_selected_maps,
+                is_veto_enabled, is_captain_mode, map_result, pre_selected_maps, game_mode,
                 tournament_id, bracket_round, bracket_match_index
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const [result] = await pool.execute(sql, [
             display_name, user_id, server_id, team1_name, team2_name, series_type,
             is_veto_enabled || 1, is_captain_mode || 0, map_result,
-            JSON.stringify(pre_selected_maps || []),
+            JSON.stringify(pre_selected_maps || []), game_mode || 'competitive',
             tournament_id || null, bracket_round || null, bracket_match_index || null
         ]);
         return result.insertId;
