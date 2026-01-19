@@ -107,6 +107,30 @@ exports.getMatchDetail = async (req, res) => {
     }
 };
 
+// Helper: Tính toán lại Captain (người vào sớm nhất) cho một match
+const recalculateCaptains = async (matchId) => {
+    // Tìm captain cho Team 1
+    const [t1Rows] = await pool.execute(`
+        SELECT user_id FROM match_participants 
+        WHERE match_id = ? AND team = 'TEAM1' 
+        ORDER BY joined_at ASC LIMIT 1
+    `, [matchId]);
+    const cap1 = t1Rows.length > 0 ? t1Rows[0].user_id : null;
+
+    // Tìm captain cho Team 2
+    const [t2Rows] = await pool.execute(`
+        SELECT user_id FROM match_participants 
+        WHERE match_id = ? AND team = 'TEAM2' 
+        ORDER BY joined_at ASC LIMIT 1
+    `, [matchId]);
+    const cap2 = t2Rows.length > 0 ? t2Rows[0].user_id : null;
+
+    // Chỉ update captain_id, KHÔNG đổi status
+    await pool.execute('UPDATE matches SET captain1_id = ?, captain2_id = ? WHERE id = ?', [cap1, cap2, matchId]);
+
+    return { captain1_id: cap1, captain2_id: cap2 };
+};
+
 // API: Tham gia hoặc Đổi Slot
 exports.joinSlot = async (req, res) => {
     try {
@@ -139,8 +163,15 @@ exports.joinSlot = async (req, res) => {
 
         await MatchParticipant.upsert(matchId, userId, team);
 
+        // Auto-assign Captain
+        const newCaps = await recalculateCaptains(matchId);
+
         const newList = await MatchParticipant.findByMatchId(matchId);
         getIo().to(`match_${matchId}`).emit('participants_update', newList);
+        
+        // Emit update captain info
+        const updatedMatch = await Match.findBasicInfo(matchId);
+        getIo().to(`match_${matchId}`).emit('match_details_update', updatedMatch);
 
         res.json({ message: "Join thành công", participants: newList });
 
@@ -165,8 +196,14 @@ exports.leaveMatch = async (req, res) => {
 
         await MatchParticipant.remove(matchId, userId);
 
+        // Auto-assign Captain (nếu captain cũ rời)
+        await recalculateCaptains(matchId);
+
         const newList = await MatchParticipant.findByMatchId(matchId);
         getIo().to(`match_${matchId}`).emit('participants_update', newList);
+
+        const updatedMatch = await Match.findBasicInfo(matchId);
+        getIo().to(`match_${matchId}`).emit('match_details_update', updatedMatch);
 
         res.json({ message: "Đã rời trận đấu" });
     } catch (error) {
@@ -252,6 +289,10 @@ exports.pickPlayer = async (req, res) => {
 
         const newList = await MatchParticipant.findByMatchId(matchId);
         getIo().to(`match_${matchId}`).emit('participants_update', newList);
+
+        // Sync match details (để chắc chắn frontend có state mới nhất)
+        const updatedMatch = await Match.findBasicInfo(matchId);
+        getIo().to(`match_${matchId}`).emit('match_details_update', updatedMatch);
 
         const newCountT1 = myTeam === 'TEAM1' ? countT1 + 1 : countT1;
         const newCountT2 = myTeam === 'TEAM2' ? countT2 + 1 : countT2;
@@ -484,6 +525,15 @@ exports.vetoMap = async (req, res) => {
         const userTeam = participant.team;
         if (userTeam !== state.turn) return res.status(403).json({ message: `Chưa đến lượt của bạn (${state.turn})` });
 
+        // Check Captain
+        let isCaptain = false;
+        if (userTeam === 'TEAM1' && String(match.captain1_id) === String(userId)) isCaptain = true;
+        if (userTeam === 'TEAM2' && String(match.captain2_id) === String(userId)) isCaptain = true;
+
+        if (!isCaptain) {
+            return res.status(403).json({ message: "Chỉ Captain mới được Ban/Pick!" });
+        }
+
         if (state.type === 'SIDE_PICK') {
             if (!side || !['CT', 'T'].includes(side)) {
                 return res.status(400).json({ message: "Vui lòng chọn side (CT hoặc T)" });
@@ -663,6 +713,7 @@ exports.sendMatchRcon = async (req, res) => {
 
 // API: Lấy thống kê
 exports.getMatchStats = async (req, res) => {
+    // ... (giữ nguyên code cũ)
     try {
         const { id } = req.params;
         const match = await Match.findById(id);
@@ -701,5 +752,44 @@ exports.getMatchStats = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Lỗi lấy thống kê" });
+    }
+};
+
+// DEV API: Add Bot
+const User = require('../models/User'); // Import User model if needed, or query directly
+exports.addBotToMatch = async (req, res) => {
+    try {
+        const matchId = req.params.id;
+        const { team } = req.body; // 'WAITING', 'TEAM1', etc.
+
+        // 1. Create Mock User
+        const randomId = Math.floor(Math.random() * 1000000000).toString();
+        const steamId = `76561198${randomId}`; // Fake Steam ID
+        const botName = `Bot ${randomId.slice(-4)}`;
+        const avatar = "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg";
+
+        await pool.execute(`
+            INSERT INTO users (id, username, avatar_url)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE username = VALUES(username)
+        `, [steamId, botName, avatar]);
+
+        // 2. Add to Match
+        await MatchParticipant.upsert(matchId, steamId, team || 'WAITING');
+
+        // 3. Recalculate Captains (just in case bot joins team directly)
+        await recalculateCaptains(matchId);
+
+        // 4. Notify Socket
+        const newList = await MatchParticipant.findByMatchId(matchId);
+        getIo().to(`match_${matchId}`).emit('participants_update', newList);
+        const updatedMatch = await Match.findBasicInfo(matchId);
+        getIo().to(`match_${matchId}`).emit('match_details_update', updatedMatch);
+
+        res.json({ message: "Bot added", bot: { steamId, botName } });
+
+    } catch (error) {
+        console.error("Add Bot Error:", error);
+        res.status(500).json({ message: "Lỗi thêm bot" });
     }
 };

@@ -120,7 +120,7 @@ function App() {
                   <button onClick={startEditing} className="text-slate-500 hover:text-white transition-colors"><Edit2 size={12} /></button>
                 </>
               )}
-              {user.is_admin === 1 && <span className="text-[10px] bg-red-600 px-1.5 py-0.5 rounded text-white font-bold tracking-wider">ADMIN</span>}
+              {user.is_admin === 1 && <Link to="/admin" className="text-[10px] bg-red-600 px-1.5 py-0.5 rounded text-white font-bold tracking-wider hover:bg-red-500 transition-colors">ADMIN</Link>}
             </div>
             <button onClick={logout} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors"><LogOut size={20} /></button>
           </div>

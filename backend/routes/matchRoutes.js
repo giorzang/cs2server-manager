@@ -35,6 +35,9 @@ router.get('/:id/stats', matchController.getMatchStats);
 router.post('/:id/captains', verifyToken, isAdmin, matchController.setCaptains);
 router.post('/:id/pick', verifyToken, matchController.pickPlayer);
 
+// Add Bot (Dev/Test)
+router.post('/:id/add-bot', verifyToken, isAdmin, matchController.addBotToMatch);
+
 // Join Slot (Team1/Team2/Spectator)
 router.post('/:id/join', verifyToken, matchController.joinSlot);
 router.post('/:id/leave', verifyToken, matchController.leaveMatch);

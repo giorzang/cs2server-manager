@@ -78,7 +78,9 @@ export default function MatchLayout() {
         ...prev,
         status: data.status,
         veto_log: data.vetoLog,
-        map_result: data.mapResult
+        map_result: data.mapResult,
+        captain1_id: data.captain1_id || prev.captain1_id,
+        captain2_id: data.captain2_id || prev.captain2_id,
       }) : null);
     });
 

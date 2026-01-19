@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
-import { Shield, Swords, Eye, Play, User as UserIcon, Gamepad2, Link as LinkIcon, Map as MapIcon, Copy, Terminal, Ban, Users, Crown, Plus, Settings } from 'lucide-react';
+import { Shield, Swords, Eye, Play, User as UserIcon, Gamepad2, Link as LinkIcon, Map as MapIcon, Copy, Terminal, Ban, Users, Crown, Plus, Settings, UserPlus } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import api from '../../services/api';
 import clsx from 'clsx';
@@ -64,6 +64,12 @@ export default function MatchLobby() {
         } catch (err: any) { alert(err.response?.data?.message); }
     };
 
+    const handleAddBot = async () => {
+        try {
+            await api.post(`/api/matches/${match.id}/add-bot`, { team: 'WAITING' });
+        } catch (err: any) { alert(err.response?.data?.message); }
+    };
+
     const PlayerSlot = ({ player, emptyText, onJoin, isCaptain }: { player?: Participant, emptyText?: string, onJoin?: () => void, isCaptain?: boolean }) => {
         if (player) {
             return (
@@ -106,11 +112,12 @@ export default function MatchLobby() {
                 if (t1 === t2) currentTurn = 'TEAM1';
                 else if (t1 > t2) currentTurn = 'TEAM2';
                 else currentTurn = 'TEAM1';
-            }
-            const isMyTurn = (currentTurn === 'TEAM1' && match.captain1_id === user?.id) ||
-                (currentTurn === 'TEAM2' && match.captain2_id === user?.id);
-            const isCaptainMode = match.is_captain_mode === 1;
 
+                console.log(`PICK DEBUG: T1=${t1}, T2=${t2} -> Turn=${currentTurn}. Me=${user?.id}. Cap1=${match.captain1_id}, Cap2=${match.captain2_id}`);
+            }
+            const isMyTurn = (currentTurn === 'TEAM1' && String(match.captain1_id) === String(user?.id)) ||
+                (currentTurn === 'TEAM2' && String(match.captain2_id) === String(user?.id));
+            const isCaptainMode = match.is_captain_mode === 1;
             return (
                 <div className="flex flex-col gap-6">
                     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex-1">
@@ -130,9 +137,14 @@ export default function MatchLobby() {
                                     </button>
                                 )}
                                 {isAdmin && match.status === 'PENDING' && (
-                                    <button onClick={() => setShowSettings(true)} className="bg-slate-700 hover:bg-slate-600 text-slate-300 p-1 rounded" title="Cài đặt trận đấu">
-                                        <Settings size={16} />
-                                    </button>
+                                    <>
+                                        <button onClick={handleAddBot} className="bg-slate-700 hover:bg-slate-600 text-slate-300 p-1 rounded" title="Thêm Bot (Test)">
+                                            <UserPlus size={16} />
+                                        </button>
+                                        <button onClick={() => setShowSettings(true)} className="bg-slate-700 hover:bg-slate-600 text-slate-300 p-1 rounded" title="Cài đặt trận đấu">
+                                            <Settings size={16} />
+                                        </button>
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -243,7 +255,9 @@ export default function MatchLobby() {
         if (match.status === 'VETO') return <VetoBoard match={match} mySlot={mySlot} />;
         if (match.status === 'LIVE' || match.status === 'FINISHED') {
             const playedMaps = getPlayedMaps();
-            const connectCmd = `connect ${match.ip}:${match.port}`;
+            // const connectCmd = `connect ${match.ip}:${match.port}`;
+            const connectCmd = `connect giorzang.info:${match.port}`;
+
             return (
                 <div className="mb-8 space-y-6">
                     {match.status === 'LIVE' && (
@@ -271,7 +285,7 @@ export default function MatchLobby() {
                                             <Ban size={18} /> HỦY TRẬN
                                         </button>
                                     )}
-                                    <a href={`steam://connect/${match.ip}:${match.port}`} className="bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded font-bold shadow-lg flex items-center gap-2">
+                                    <a href={`steam://connect/giorzang.info:${match.port}`} className="bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded font-bold shadow-lg flex items-center gap-2">
                                         <LinkIcon size={18} /> CONNECT
                                     </a>
                                 </div>
