@@ -86,7 +86,13 @@ export default function SkinsChanger() {
 
     // User's saved preferences
     interface UserPreferences {
-        skins: Array<{ weapon_defindex: number; weapon_paint_id: number; weapon_team: number }>;
+        skins: Array<{ 
+            weapon_defindex: number; 
+            weapon_paint_id: number; 
+            weapon_team: number;
+            weapon_wear: number;
+            weapon_seed: number;
+        }>;
         knives: Array<{ knife: string; weapon_team: number }>;
         agents: Array<{ agent_ct: string | null; agent_t: string | null }>;
         gloves: Array<{ weapon_defindex: number; weapon_team: number }>;
@@ -242,12 +248,37 @@ export default function SkinsChanger() {
             case 'weapons':
                 const skin = item as Skin;
                 setSelectedSkin(skin);
+                
+                // Check if already equipped to pre-fill settings
+                let initialTeam: 'CT' | 'T' | 'BOTH' = 'BOTH';
+                let initialWear = 0.00;
+                let initialSeed = 0;
+
+                if (userPrefs?.skins) {
+                    const matchedSkins = userPrefs.skins.filter(s =>
+                        s.weapon_defindex === skin.weapon_defindex &&
+                        s.weapon_paint_id === Number(skin.paint)
+                    );
+                    
+                    if (matchedSkins.length > 0) {
+                        const hasT = matchedSkins.some(s => s.weapon_team === 2);
+                        const hasCT = matchedSkins.some(s => s.weapon_team === 3);
+                        if (hasT && hasCT) initialTeam = 'BOTH';
+                        else if (hasT) initialTeam = 'T';
+                        else if (hasCT) initialTeam = 'CT';
+
+                        // Use values from the first match (usually consistent across teams if set together)
+                        initialWear = matchedSkins[0].weapon_wear;
+                        initialSeed = matchedSkins[0].weapon_seed;
+                    }
+                }
+
                 setSkinSettings({
                     weapon_defindex: skin.weapon_defindex,
                     paint_id: skin.paint,
-                    wear: 0.00,
-                    seed: 0,
-                    team: 'BOTH'
+                    wear: initialWear,
+                    seed: initialSeed,
+                    team: initialTeam
                 });
                 break;
             case 'knives':
@@ -286,7 +317,7 @@ export default function SkinsChanger() {
     // Refresh user preferences after changes
     const refreshPrefs = async () => {
         try {
-            const prefsRes = await api.get('/api/skins');
+            const prefsRes = await api.get(`/api/skins?t=${Date.now()}`);
             if (prefsRes.data.success) {
                 setUserPrefs(prefsRes.data.data);
             }
@@ -684,21 +715,29 @@ export default function SkinsChanger() {
                                     case 'weapons':
                                         const skinItem = item as Skin;
                                         // Check if skin is selected and get the team
-                                        const matchedSkin = userPrefs.skins.find(s =>
+                                        // Fix: Check all entries to correctly identify 'BOTH'
+                                        const matchedSkins = userPrefs.skins.filter(s =>
                                             s.weapon_defindex === skinItem.weapon_defindex &&
                                             s.weapon_paint_id === Number(skinItem.paint)
                                         );
+                                        
                                         // For knives, also check if knife type matches
+                                        let weaponKnifeTypeMatches = true;
                                         if (skinItem.weapon_defindex >= 500 && userPrefs.knives.length > 0) {
                                             // Check if any knife entry matches the weapon_name
-                                            const knifeTypeMatches = userPrefs.knives.some(k => k.knife === skinItem.weapon_name);
-                                            isSelected = !!matchedSkin && knifeTypeMatches;
-                                        } else {
-                                            isSelected = !!matchedSkin;
+                                            weaponKnifeTypeMatches = userPrefs.knives.some(k => k.knife === skinItem.weapon_name);
                                         }
-                                        // Determine team from weapon_team: 0=BOTH, 2=T, 3=CT
-                                        if (matchedSkin) {
-                                            selectedTeam = matchedSkin.weapon_team === 2 ? 'T' : matchedSkin.weapon_team === 3 ? 'CT' : 'BOTH';
+                                        
+                                        isSelected = matchedSkins.length > 0 && weaponKnifeTypeMatches;
+
+                                        // Determine team from weapon_team: 0=BOTH (legacy?), 2=T, 3=CT
+                                        if (isSelected && matchedSkins.length > 0) {
+                                            const hasT = matchedSkins.some(s => Number(s.weapon_team) === 2);
+                                            const hasCT = matchedSkins.some(s => Number(s.weapon_team) === 3);
+                                            
+                                            if (hasT && hasCT) selectedTeam = 'BOTH';
+                                            else if (hasT) selectedTeam = 'T';
+                                            else if (hasCT) selectedTeam = 'CT';
                                         }
                                         break;
                                     case 'knives':
