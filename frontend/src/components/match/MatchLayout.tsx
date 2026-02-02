@@ -157,7 +157,7 @@ export default function MatchLayout() {
     setRconLog(prev => [...prev, `> ${cmd}`]);
     try {
       const res = await api.post(`/api/matches/${match.id}/rcon`, { command: cmd });
-      const responseLines = res.data.response ? res.data.response.split('\n') : ['(No response)'];
+      const responseLines = res.data.response ? res.data.response.split('\n') : ['(No response)'] ;
       setRconLog(prev => [...prev, ...responseLines]);
     } catch (error: any) {
       setRconLog(prev => [...prev, `Error: ${error.response?.data?.message || error.message}`]);
@@ -171,7 +171,7 @@ export default function MatchLayout() {
   return (
     <div className="container mx-auto p-4 md:p-8 max-w-6xl">
       {/* Header Info */}
-      <div className="flex justify-between items-start mb-4 bg-slate-900/50 p-6 rounded-xl border border-slate-800 backdrop-blur">
+      <div className="flex justify-between items-start mb-4 bg-secondary/50 p-6 rounded-xl border border-slate-800 backdrop-blur">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold text-white">{match.display_name}</h1>
@@ -186,7 +186,7 @@ export default function MatchLayout() {
         </div>
 
         {!isLocked && (
-          <button onClick={handleLeave} className="bg-slate-800 hover:bg-red-900/50 text-slate-300 hover:text-red-400 px-4 py-2 rounded border border-slate-700 font-medium flex items-center gap-2 transition-colors">
+          <button onClick={handleLeave} className="bg-secondary hover:bg-red-900/50 text-slate-300 hover:text-red-400 px-4 py-2 rounded border border-slate-700 font-medium flex items-center gap-2 transition-colors">
             <LogOut size={18} /> Rời phòng
           </button>
         )}
@@ -195,8 +195,8 @@ export default function MatchLayout() {
       {/* RCON Console (Only Admin) */}
       {isAdmin && match.status !== 'FINISHED' && (
         <div className="mb-8 bg-black/40 border border-slate-700 rounded-lg overflow-hidden font-mono text-sm">
-          <div className="bg-slate-800 px-4 py-2 flex items-center justify-between border-b border-slate-700">
-            <span className="text-orange-400 font-bold flex items-center gap-2"><Terminal size={14} /> SERVER CONSOLE (RCON)</span>
+          <div className="bg-secondary px-4 py-2 flex items-center justify-between border-b border-slate-700">
+            <span className="text-accent font-bold flex items-center gap-2"><Terminal size={14} /> SERVER CONSOLE (RCON)</span>
             <span className="text-xs text-slate-500">Chỉ Admin nhìn thấy</span>
           </div>
           <div className="h-32 overflow-y-auto p-4 space-y-1 text-slate-300">
@@ -214,7 +214,7 @@ export default function MatchLayout() {
               placeholder="Nhập lệnh RCON..."
               className="flex-1 bg-transparent px-4 py-3 text-white focus:outline-none placeholder:text-slate-600"
             />
-            <button type="submit" disabled={sendingRcon} className="bg-slate-800 hover:bg-orange-600 text-white px-6 py-2 transition-colors disabled:opacity-50 border-l border-slate-700">
+            <button type="submit" disabled={sendingRcon} className="bg-secondary hover:bg-accent text-white px-6 py-2 transition-colors disabled:opacity-50 border-l border-slate-700">
               {sendingRcon ? '...' : <Send size={16} />}
             </button>
           </form>

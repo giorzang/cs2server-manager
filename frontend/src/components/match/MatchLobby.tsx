@@ -74,11 +74,11 @@ export default function MatchLobby() {
         if (player) {
             return (
                 <div className={clsx("flex items-center gap-3 p-3 rounded border animate-in fade-in zoom-in duration-200 relative",
-                    isCaptain ? "bg-yellow-900/30 border-yellow-600" : "bg-slate-800/80 border-slate-700"
+                    isCaptain ? "bg-yellow-900/30 border-yellow-600" : "bg-secondary/80 border-slate-700"
                 )}>
-                    {isCaptain && <Crown size={14} className="absolute -top-2 -right-2 text-yellow-500 bg-slate-900 rounded-full" />}
+                    {isCaptain && <Crown size={14} className="absolute -top-2 -right-2 text-yellow-500 bg-secondary rounded-full" />}
                     <img src={player.avatar_url} className="w-8 h-8 rounded" alt="avatar" />
-                    <span className={clsx("font-bold truncate", player.user_id === user?.id ? "text-orange-400" : "text-slate-200")}>
+                    <span className={clsx("font-bold truncate", player.user_id === user?.id ? "text-accent" : "text-slate-200")}>
                         {player.username}
                     </span>
                 </div>
@@ -95,7 +95,7 @@ export default function MatchLobby() {
                     "w-full flex items-center justify-center gap-2 border border-dashed p-3 rounded transition-all",
                     isDisabled
                         ? "border-slate-800 text-slate-700 cursor-not-allowed"
-                        : "border-slate-700 text-slate-500 hover:text-white hover:border-slate-500 hover:bg-slate-800"
+                        : "border-slate-700 text-slate-500 hover:text-white hover:border-slate-500 hover:bg-secondary"
                 )}
             >
                 <UserIcon size={16} /> {match.status === 'PICKING' ? "Chờ Captain..." : (emptyText || "Trống")}
@@ -112,22 +112,20 @@ export default function MatchLobby() {
                 if (t1 === t2) currentTurn = 'TEAM1';
                 else if (t1 > t2) currentTurn = 'TEAM2';
                 else currentTurn = 'TEAM1';
-
-                console.log(`PICK DEBUG: T1=${t1}, T2=${t2} -> Turn=${currentTurn}. Me=${user?.id}. Cap1=${match.captain1_id}, Cap2=${match.captain2_id}`);
             }
             const isMyTurn = (currentTurn === 'TEAM1' && String(match.captain1_id) === String(user?.id)) ||
                 (currentTurn === 'TEAM2' && String(match.captain2_id) === String(user?.id));
             const isCaptainMode = match.is_captain_mode === 1;
             return (
                 <div className="flex flex-col gap-6">
-                    <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex-1">
+                    <div className="bg-secondary border border-slate-800 rounded-lg p-4 flex-1">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-slate-400 font-bold flex items-center gap-2 text-sm uppercase">
                                 <Users size={16} /> Hàng chờ ({waitingPlayers.length})
                             </h3>
                             <div className="flex items-center gap-2">
                                 {!mySlot && match.status !== 'PICKING' && (
-                                    <button onClick={() => handleJoin('WAITING')} className="bg-orange-600 hover:bg-orange-500 text-white text-xs px-3 py-1 rounded">
+                                    <button onClick={() => handleJoin('WAITING')} className="bg-accent hover:bg-accent-hover text-white text-xs px-3 py-1 rounded">
                                         Tham gia
                                     </button>
                                 )}
@@ -150,18 +148,18 @@ export default function MatchLobby() {
                         </div>
 
                         {match.status === 'PENDING' && isAdmin && isCaptainMode && (
-                            <div className="mb-4 bg-slate-800 p-3 rounded border border-slate-700 animate-in fade-in">
+                            <div className="mb-4 bg-primary p-3 rounded border border-slate-700 animate-in fade-in">
                                 <h4 className="text-white text-sm font-bold mb-2 flex items-center gap-2"><Crown size={14} className="text-yellow-500" /> Chọn Captain</h4>
                                 {waitingPlayers.length < 2 ? (
                                     <p className="text-xs text-yellow-500">Cần ít nhất 2 người trong hàng chờ.</p>
                                 ) : (
                                     <>
                                         <div className="flex gap-2 mb-2">
-                                            <select className="bg-slate-900 text-white p-1 rounded text-sm w-1/2 border border-slate-600" onChange={e => setSelectedCap1(e.target.value)} value={selectedCap1}>
+                                            <select className="bg-secondary text-white p-1 rounded text-sm w-1/2 border border-slate-600" onChange={e => setSelectedCap1(e.target.value)} value={selectedCap1}>
                                                 <option value="">-- Cap 1 --</option>
                                                 {waitingPlayers.map(p => <option key={p.user_id} value={p.user_id}>{p.username}</option>)}
                                             </select>
-                                            <select className="bg-slate-900 text-white p-1 rounded text-sm w-1/2 border border-slate-600" onChange={e => setSelectedCap2(e.target.value)} value={selectedCap2}>
+                                            <select className="bg-secondary text-white p-1 rounded text-sm w-1/2 border border-slate-600" onChange={e => setSelectedCap2(e.target.value)} value={selectedCap2}>
                                                 <option value="">-- Cap 2 --</option>
                                                 {waitingPlayers.filter(p => p.user_id !== selectedCap1).map(p => <option key={p.user_id} value={p.user_id}>{p.username}</option>)}
                                             </select>
@@ -204,7 +202,7 @@ export default function MatchLobby() {
 
                         <div className="space-y-2 max-h-[400px] overflow-y-auto mt-2">
                             {waitingPlayers.map(p => (
-                                <div key={p.user_id} className="flex items-center justify-between bg-slate-800/50 p-2 rounded hover:bg-slate-800 transition-colors group border border-transparent hover:border-slate-600">
+                                <div key={p.user_id} className="flex items-center justify-between bg-primary/50 p-2 rounded hover:bg-slate-800 transition-colors group border border-transparent hover:border-slate-600">
                                     <div className="flex items-center gap-3">
                                         <img src={p.avatar_url} className="w-8 h-8 rounded" />
                                         <span className="text-slate-200 font-medium">{p.username}</span>
@@ -222,8 +220,8 @@ export default function MatchLobby() {
                         </div>
                     </div>
 
-                    {/* Spectator Box */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+                    {/* Spectator Box */} 
+                    <div className="bg-secondary border border-slate-800 rounded-lg p-4">
                         <h3 className="text-slate-500 font-bold mb-2 flex items-center gap-2 text-xs uppercase"><Eye size={14} /> Spectators ({spectators.length})</h3>
                         <div className="flex flex-wrap gap-2">
                             {spectators.map(p => (
@@ -261,7 +259,7 @@ export default function MatchLobby() {
             return (
                 <div className="mb-8 space-y-6">
                     {match.status === 'LIVE' && (
-                        <div className="bg-slate-900 border border-green-500/30 rounded-xl p-6 relative overflow-hidden">
+                        <div className="bg-secondary border border-green-500/30 rounded-xl p-6 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-4 opacity-10"><Gamepad2 size={120} /></div>
                             <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
                                 <div>
@@ -299,7 +297,7 @@ export default function MatchLobby() {
                             const mapInfo = mapPool.find(m => m.map_key === mapKey);
                             const mapIndex = idx + 1;
                             return (
-                                <Link to={`${mapIndex}`} key={mapKey} className="group relative h-32 rounded-lg overflow-hidden border border-slate-700 hover:border-orange-500 transition-all block">
+                                <Link to={`${mapIndex}`} key={mapKey} className="group relative h-32 rounded-lg overflow-hidden border border-slate-700 hover:border-accent transition-all block">
                                     {mapInfo?.image_url && <img src={mapInfo.image_url} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
                                     <div className="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition-colors flex flex-col items-center justify-center">
                                         <span className="text-slate-300 font-bold text-sm tracking-widest mb-1">MAP {mapIndex}</span>
@@ -320,11 +318,11 @@ export default function MatchLobby() {
             {showSettings && <MatchSettingsModal match={match} mapPool={mapPool} onClose={() => setShowSettings(false)} />}
             {renderMatchStatus()}
 
-            {/* Main Lobby Layout */}
+            {/* Main Lobby Layout */} 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* TEAM 1 */}
+                {/* TEAM 1 */} 
                 <div className="space-y-4">
-                    <div className="bg-gradient-to-r from-orange-900/40 to-slate-900 border-l-4 border-orange-500 p-4 rounded-r">
+                    <div className="bg-gradient-to-r from-orange-900/40 to-secondary border-l-4 border-orange-500 p-4 rounded-r">
                         <h2 className="text-xl font-bold text-orange-500 flex items-center gap-2">
                             <Swords size={20} /> {match.team1_name}
                         </h2>
@@ -343,12 +341,12 @@ export default function MatchLobby() {
                     </div>
                 </div>
 
-                {/* CENTER PANEL (Waiting List or VS) */}
+                {/* CENTER PANEL (Waiting List or VS) */} 
                 {renderCenterPanel()}
 
-                {/* TEAM 2 */}
+                {/* TEAM 2 */} 
                 <div className="space-y-4">
-                    <div className="bg-gradient-to-l from-blue-900/40 to-slate-900 border-r-4 border-blue-500 p-4 rounded-l text-right">
+                    <div className="bg-gradient-to-l from-blue-900/40 to-secondary border-r-4 border-blue-500 p-4 rounded-l text-right">
                         <h2 className="text-xl font-bold text-blue-500 flex items-center gap-2 justify-end">
                             {match.team2_name} <Shield size={20} />
                         </h2>
