@@ -12,6 +12,8 @@ import MatchLobby from './components/match/MatchLobby';
 import MatchMapStats from './components/match/MatchMapStats';
 import SkinsChanger from './pages/SkinsChanger';
 import AdminDashboard from './pages/AdminDashboard';
+import NotFound from './pages/NotFound';
+import ProtectedRoute from './components/ProtectedRoute';
 import api from './services/api';
 
 function App() {
@@ -136,14 +138,17 @@ function App() {
         <Route path="/users" element={<Users />} />
         <Route path="/tournaments" element={<Tournaments />} />
         <Route path="/tournaments/:id" element={<TournamentDetail />} />
-        <Route path="/skins" element={<SkinsChanger />} />
+        <Route path="/skins" element={<ProtectedRoute><SkinsChanger /></ProtectedRoute>} />
 
         <Route path="/matches/:id" element={<MatchLayout />}>
           <Route index element={<MatchLobby />} />
           <Route path=":mapnumber" element={<MatchMapStats />} />
         </Route>
 
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>} />
+
+        {/* 404 Catch-all */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
   );
