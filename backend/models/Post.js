@@ -9,7 +9,8 @@ class Post {
 
     static async findAll() {
         const sql = `
-            SELECT p.*, u.username, u.avatar_url 
+            SELECT p.*, u.username, u.avatar_url,
+                   (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count
             FROM posts p
             JOIN users u ON p.author_id = u.id
             ORDER BY p.created_at DESC
@@ -22,6 +23,24 @@ class Post {
         const sql = `DELETE FROM posts WHERE id = ?`;
         const [result] = await pool.execute(sql, [id]);
         return result.affectedRows > 0;
+    }
+
+    static async findById(id) {
+        const sql = `SELECT * FROM posts WHERE id = ?`;
+        const [rows] = await pool.execute(sql, [id]);
+        return rows[0];
+    }
+
+    static async findByIdWithDetails(id) {
+        const sql = `
+            SELECT p.*, u.username, u.avatar_url,
+                   (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count
+            FROM posts p
+            JOIN users u ON p.author_id = u.id
+            WHERE p.id = ?
+        `;
+        const [rows] = await pool.execute(sql, [id]);
+        return rows[0];
     }
 
     static async update(id, title, content) {

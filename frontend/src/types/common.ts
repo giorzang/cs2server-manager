@@ -84,6 +84,17 @@ export interface Post {
   username: string;
   avatar_url: string;
   created_at: string;
+  comment_count?: number;
+}
+
+export interface Comment {
+  id: number;
+  content: string;
+  post_id: number;
+  author_id: string;
+  username: string;
+  avatar_url: string;
+  created_at: string;
 }
 
 export interface MatchContextType {

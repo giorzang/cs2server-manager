@@ -14,6 +14,7 @@ const matchzyRoutes = require('./routes/matchzyRoutes'); // Import MatchZy Route
 const userRoutes = require('./routes/userRoutes');
 const tournamentRoutes = require('./routes/tournamentRoutes');
 const postRoutes = require('./routes/postRoutes');
+const commentRoutes = require('./routes/commentRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const skinRoutes = require('./routes/skinRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -49,6 +50,7 @@ app.use('/api/matchzy', matchzyRoutes); // Đăng ký MatchZy Routes
 app.use('/api/users', userRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/comments', commentRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/skins', skinRoutes);
 app.use('/api/admin', adminRoutes);

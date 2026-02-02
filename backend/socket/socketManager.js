@@ -8,7 +8,7 @@ let io;
 const authMiddleware = (socket, next) => {
     const token = socket.handshake.auth.token;
     console.log(`🔌 Socket connecting... Token provided? ${!!token}`);
-    
+
     if (token) {
         jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
             if (err) {
@@ -30,7 +30,7 @@ const authMiddleware = (socket, next) => {
 exports.init = (server) => {
     io = socketIo(server, {
         cors: {
-            origin: true, 
+            origin: true,
             methods: ["GET", "POST"],
             credentials: true
         }
@@ -44,7 +44,7 @@ exports.init = (server) => {
 
         socket.on('join_match_room', async (matchId) => {
             if (!matchId) return;
-            
+
             // 1. Join Global Match Room
             const roomName = `match_${matchId}`;
             socket.join(roomName);
@@ -54,7 +54,7 @@ exports.init = (server) => {
             if (socket.user && socket.user.uid) {
                 try {
                     const [rows] = await pool.execute(
-                        'SELECT team FROM match_participants WHERE match_id = ? AND user_id = ?', 
+                        'SELECT team FROM match_participants WHERE match_id = ? AND user_id = ?',
                         [matchId, socket.user.uid]
                     );
                     if (rows.length > 0) {
@@ -67,16 +67,27 @@ exports.init = (server) => {
             }
         });
 
+        // Join News Room for real-time post/comment updates
+        socket.on('join_news_room', () => {
+            socket.join('news_room');
+            console.log(`User ${userId} ---> Joined News Room`);
+        });
+
+        socket.on('leave_news_room', () => {
+            socket.leave('news_room');
+            console.log(`User ${userId} <--- Left News Room`);
+        });
+
         // Xử lý gửi tin nhắn
         socket.on('chat_message', async (data) => {
             console.log(`📩 Received chat_message from ${socket.id}:`, data);
-            
+
             // data: { matchId, message, scope: 'GLOBAL' | 'TEAM' }
             if (!socket.user || !socket.user.uid) {
                 console.warn(`⚠️ Guest tried to chat (Socket User: ${JSON.stringify(socket.user)})`);
                 return; // Chỉ user login mới được chat
             }
-            
+
             const { matchId, message, scope } = data;
             const content = message?.trim();
             if (!content) return;
@@ -101,17 +112,17 @@ exports.init = (server) => {
                     participant = rows[0];
                 } else {
                     // Fallback for Admin testing: Fetch basic user info
-                     const [uRows] = await pool.execute('SELECT username, avatar_url FROM users WHERE id = ?', [socket.user.uid]);
-                     if (uRows.length > 0) {
-                         participant = { ...uRows[0], team: 'SPECTATOR' }; // Mặc định Admin là Spec
-                         console.log("ℹ️ User not in slot, chatting as Spectator (Admin/Test)");
-                     } else {
-                         return;
-                     }
+                    const [uRows] = await pool.execute('SELECT username, avatar_url FROM users WHERE id = ?', [socket.user.uid]);
+                    if (uRows.length > 0) {
+                        participant = { ...uRows[0], team: 'SPECTATOR' }; // Mặc định Admin là Spec
+                        console.log("ℹ️ User not in slot, chatting as Spectator (Admin/Test)");
+                    } else {
+                        return;
+                    }
                 }
 
                 let targetScope = scope; // 'GLOBAL'
-                
+
                 // Nếu chat Team -> check team hợp lệ
                 if (scope === 'TEAM') {
                     if (['TEAM1', 'TEAM2', 'SPECTATOR'].includes(participant.team)) {
